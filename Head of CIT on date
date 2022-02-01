@@ -1,0 +1,38 @@
+SELECT
+    sp3.last_name||' '||LEFT(first_name, 1)||'.'||LEFT(second_name, 1)||'.' AS FIO
+FROM
+    subject_person sp3 --таблица Субъектов Учета
+WHERE
+--Выберем актуального Руководителя по Коду профессии, Статусу и Дате последней записи по коду профессии Руководителя ЦИТ на дату
+    EXISTS 
+        (
+        SELECT
+            mph.id
+        FROM
+            multiprof_hist mph
+        WHERE
+            mph.prof_id = '246805Ц' --Код профессии Руководителя ЦИТ
+            AND mph.oper_date =
+                (
+                    SELECT 
+                        MAX (mph2.oper_date) --Дата последней записи по коду профессии Руководителя ЦИТ на дату
+                    FROM 
+                        multiprof_hist mph2
+                    WHERE 
+                        mph2.OPER_DATE <= :dDate_1
+                        AND mph2.prof_id = '246805Ц' 
+                )
+            AND mph.status_id NOT IN --Исключим лишние статусы СУ
+                (
+                    'у1',
+                    'у2',
+                    'всм',
+                    'внш'
+                )
+            AND mph.change_type NOT IN --Исключим лишние типы изменений СУ
+                (
+                    'L',
+                    'D'
+                )
+            AND sp3.id = mph.id
+        )
